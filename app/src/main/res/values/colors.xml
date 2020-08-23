@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <color name="bg_gradient_top">@color/indigo_900</color>
+    <color name="bg_gradient_bottom">@color/black_1</color>
+    <color name="hand_shadow_color">@color/black_1</color>
+    <color name="hand_color">@color/white_1</color>
+    <color name="hand_color_seconds">@color/white_1</color>
+    <color name="complication_background_color">@color/black_2</color>
+    <color name="complication_icon_color">@color/black_3</color>
+
+<!-- Color Swatch-->
+    <color name="purple_1">#512DA8</color>
+    <color name="pink_1">#FF4081</color>
+
+    <color name="indigo_900">#1a237e</color>
+    <color name="indigo_600">#3949ab</color>
+    <color name="indigo_100">#c5cae9</color>
+
+    <color name="blue_900">#0d47a1</color>
+
+    <color name="black_1">#000000</color>
+    <color name="black_2">#1A000000</color>
+    <color name="black_3">#4D000000</color>
+
+    <color name="white_1">#FFFFFF</color>
+    <color name="red_1">#FFFF0000</color>
+</resources>
