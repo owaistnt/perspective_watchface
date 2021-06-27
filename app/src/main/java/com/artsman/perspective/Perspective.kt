@@ -147,13 +147,13 @@ class Perspective : CanvasWatchFaceService() {
                 shader = linearGradient
             }
             mBackgroundBitmap = BitmapFactory.decodeResource(resources, R.drawable.bg)
+            mWatchHandHighlightColor = applicationContext fromColor R.color.bg_gradient_bottom
+            mWatchHandColor = applicationContext fromColor R.color.hand_color
+            mWatchHandShadowColor = applicationContext fromColor R.color.hand_shadow_color
 
             /* Extracts colors from background image to improve watchface style. */
             Palette.from(mBackgroundBitmap).generate {
                 it?.let {
-                    mWatchHandHighlightColor = applicationContext fromColor R.color.bg_gradient_bottom
-                    mWatchHandColor = applicationContext fromColor R.color.hand_color
-                    mWatchHandShadowColor = it.getDarkMutedColor(applicationContext fromColor R.color.hand_shadow_color)
                     updateWatchHandStyle()
                 }
             }
