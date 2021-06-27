@@ -34,8 +34,8 @@ private const val INTERACTIVE_UPDATE_RATE_MS = 1000
  */
 private const val MSG_UPDATE_TIME = 0
 
-private const val HOUR_STROKE_WIDTH = 5f
-private const val MINUTE_STROKE_WIDTH = 3f
+private const val HOUR_STROKE_WIDTH = 7f
+private const val MINUTE_STROKE_WIDTH = 5f
 private const val SECOND_TICK_STROKE_WIDTH = 2f
 
 private const val CENTER_GAP_AND_CIRCLE_RADIUS = 4f
@@ -74,7 +74,7 @@ class Perspective : CanvasWatchFaceService() {
 
     inner class Engine : CanvasWatchFaceService.Engine() {
 
-        private var mIsRound: Boolean=false
+        private var mIsRound: Boolean = false
         private lateinit var mCalendar: Calendar
 
         private var mGradient1: Int = Color.BLACK
@@ -95,12 +95,15 @@ class Perspective : CanvasWatchFaceService() {
         private var mWatchHandShadowColor: Int = 0
 
         private lateinit var mHourPaint: Paint
+        private lateinit var mHourEndPaint: Paint
         private lateinit var mMinutePaint: Paint
+        private lateinit var mMinuteEndPaint: Paint
         private lateinit var mSecondPaint: Paint
+        private lateinit var mSecondEndPaint: Paint
         private lateinit var mTickAndCirclePaint: Paint
+        private lateinit var mNumberPaint: Paint
 
         private lateinit var mBackgroundPaint: Paint
-        private lateinit var mBackgroundBitmap: Bitmap
         private lateinit var mGrayBackgroundBitmap: Bitmap
 
         private var mAmbient: Boolean = false
@@ -136,27 +139,26 @@ class Perspective : CanvasWatchFaceService() {
             initializeBackground()
             initializeComplication()
             initializeWatchFace()
+            updateWatchHandStyle()
         }
 
         private fun initializeBackground() {
-            mGradient1 = ContextCompat.getColor(applicationContext, R.color.bg_gradient_top)//Color.parseColor("#512DA8")
-            mGradient2 = ContextCompat.getColor(applicationContext, R.color.bg_gradient_bottom)//Color.parseColor("#FF4081")
+            mGradient1 = ContextCompat.getColor(
+                applicationContext,
+                R.color.bg_gradient_top
+            )//Color.parseColor("#512DA8")
+            mGradient2 = ContextCompat.getColor(
+                applicationContext,
+                R.color.bg_gradient_bottom
+            )//Color.parseColor("#FF4081")
             val linearGradient =
                 LinearGradient(100f, 0f, 100f, 800f, mGradient1, mGradient2, Shader.TileMode.CLAMP)
             mBackgroundPaint = Paint().apply {
                 shader = linearGradient
             }
-            mBackgroundBitmap = BitmapFactory.decodeResource(resources, R.drawable.bg)
             mWatchHandHighlightColor = applicationContext fromColor R.color.bg_gradient_bottom
             mWatchHandColor = applicationContext fromColor R.color.hand_color
             mWatchHandShadowColor = applicationContext fromColor R.color.hand_shadow_color
-
-            /* Extracts colors from background image to improve watchface style. */
-            Palette.from(mBackgroundBitmap).generate {
-                it?.let {
-                    updateWatchHandStyle()
-                }
-            }
         }
 
         private infix fun Context.fromColor(colorRes: Int): Int {
@@ -166,7 +168,7 @@ class Perspective : CanvasWatchFaceService() {
         private fun initializeWatchFace() {
             /* Set defaults for colors */
             mWatchHandColor = applicationContext fromColor R.color.hand_color
-            mWatchHandHighlightColor = applicationContext fromColor  R.color.hand_color_seconds
+            mWatchHandHighlightColor = applicationContext fromColor R.color.hand_color_seconds
             mWatchHandShadowColor = applicationContext fromColor R.color.hand_shadow_color
 
             mHourPaint = Paint().apply {
@@ -179,6 +181,13 @@ class Perspective : CanvasWatchFaceService() {
                 )
             }
 
+            mHourEndPaint = Paint().apply {
+                color = mWatchHandColor
+                strokeWidth = HOUR_STROKE_WIDTH
+                isAntiAlias = true
+                strokeCap = Paint.Cap.ROUND
+            }
+
             mMinutePaint = Paint().apply {
                 color = mWatchHandColor
                 strokeWidth = MINUTE_STROKE_WIDTH
@@ -187,6 +196,13 @@ class Perspective : CanvasWatchFaceService() {
                 setShadowLayer(
                     SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
                 )
+            }
+
+            mMinuteEndPaint = Paint().apply {
+                color = mWatchHandColor
+                strokeWidth = MINUTE_STROKE_WIDTH
+                isAntiAlias = true
+                strokeCap = Paint.Cap.ROUND
             }
 
             mSecondPaint = Paint().apply {
@@ -199,11 +215,29 @@ class Perspective : CanvasWatchFaceService() {
                 )
             }
 
+            mSecondEndPaint = Paint().apply {
+                color = mWatchHandHighlightColor
+                strokeWidth = SECOND_TICK_STROKE_WIDTH
+                isAntiAlias = true
+                strokeCap = Paint.Cap.ROUND
+            }
+
             mTickAndCirclePaint = Paint().apply {
                 color = mWatchHandColor
                 strokeWidth = SECOND_TICK_STROKE_WIDTH
                 isAntiAlias = true
-                style = Paint.Style.STROKE
+                style = Paint.Style.FILL_AND_STROKE
+                setShadowLayer(
+                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                )
+            }
+
+            mNumberPaint = Paint().apply {
+                color = mWatchHandColor
+                strokeWidth = SECOND_TICK_STROKE_WIDTH
+                isAntiAlias = true
+                style = Paint.Style.FILL_AND_STROKE
+                textSize=20f
                 setShadowLayer(
                     SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
                 )
@@ -222,7 +256,7 @@ class Perspective : CanvasWatchFaceService() {
 
         override fun onApplyWindowInsets(insets: WindowInsets?) {
             super.onApplyWindowInsets(insets)
-            mIsRound=insets?.isRound ?: false
+            mIsRound = insets?.isRound ?: false
         }
 
         override fun onDestroy() {
@@ -327,19 +361,12 @@ class Perspective : CanvasWatchFaceService() {
             /*
              * Calculate lengths of different hands based on watch screen size.
              */
-            mSecondHandLength = (mCenterX * 0.875).toFloat()
+            mSecondHandLength = (mCenterX * 0.60).toFloat()
             sMinuteHandLength = (mCenterX * 0.75).toFloat()
             sHourHandLength = (mCenterX * 0.5).toFloat()
 
 
             /* Scale loaded background image (more efficient) if surface dimensions change. */
-            val scale = width.toFloat() / mBackgroundBitmap.width.toFloat()
-
-            mBackgroundBitmap = Bitmap.createScaledBitmap(
-                mBackgroundBitmap,
-                (mBackgroundBitmap.width * scale).toInt(),
-                (mBackgroundBitmap.height * scale).toInt(), true
-            )
 
             /*
              * Create a gray version of the image only if it will look nice on the device in
@@ -368,8 +395,8 @@ class Perspective : CanvasWatchFaceService() {
 
         private fun initGrayBackgroundBitmap() {
             mGrayBackgroundBitmap = Bitmap.createBitmap(
-                mBackgroundBitmap.width,
-                mBackgroundBitmap.height,
+               100,
+                100,
                 Bitmap.Config.ARGB_8888
             )
             val canvas = Canvas(mGrayBackgroundBitmap)
@@ -378,7 +405,7 @@ class Perspective : CanvasWatchFaceService() {
             colorMatrix.setSaturation(0f)
             val filter = ColorMatrixColorFilter(colorMatrix)
             grayPaint.colorFilter = filter
-            canvas.drawBitmap(mBackgroundBitmap, 0f, 0f, grayPaint)
+            canvas.drawBitmap(mGrayBackgroundBitmap, 0f, 0f, grayPaint)
         }
 
         /**
@@ -421,18 +448,20 @@ class Perspective : CanvasWatchFaceService() {
                 canvas.drawBitmap(mGrayBackgroundBitmap, 0f, 0f, mBackgroundPaint)
             } else {
                 //canvas.drawBitmap(mBackgroundBitmap, 0f, 0f, mBackgroundPaint)
-                if(mIsRound)
-                canvas.drawCircle(
-                    canvas.width / 2f,
-                    canvas.width / 2f,
-                    canvas.width / 2f,
-                    mBackgroundPaint
-                )
+                if (mIsRound)
+                    canvas.drawCircle(
+                        canvas.width / 2f,
+                        canvas.width / 2f,
+                        canvas.width / 2f,
+                        mBackgroundPaint
+                    )
                 else
-                    canvas.drawRect(0f,
+                    canvas.drawRect(
+                        0f,
                         0f, canvas.width.toFloat(),
                         canvas.height.toFloat(),
-                        mBackgroundPaint)
+                        mBackgroundPaint
+                    )
             }
         }
 
@@ -448,13 +477,19 @@ class Perspective : CanvasWatchFaceService() {
             for (tickIndex in 0..11) {
                 val tickRot = (tickIndex.toDouble() * Math.PI * 2.0 / 12).toFloat()
                 val innerX = Math.sin(tickRot.toDouble()).toFloat() * innerTickRadius
-                    val innerY = (-Math.cos(tickRot.toDouble())).toFloat() * innerTickRadius
+                val innerY = (-Math.cos(tickRot.toDouble())).toFloat() * innerTickRadius
                 val outerX = Math.sin(tickRot.toDouble()).toFloat() * outerTickRadius
                 val outerY = (-Math.cos(tickRot.toDouble())).toFloat() * outerTickRadius
                 canvas.drawLine(
                     mCenterX + innerX, mCenterY + innerY,
                     mCenterX + outerX, mCenterY + outerY, mTickAndCirclePaint
                 )
+                val number= (tickIndex+6) % 12
+                val numberText= if(number%3==0) "" else number.toString()
+                canvas.drawText(numberText,
+                    mCenterX-(Math.sin(tickRot.toDouble()).toFloat()*(mSecondHandLength+58)),
+                    mCenterY-((-Math.cos(tickRot.toDouble())).toFloat()*(mSecondHandLength+58)),
+                    mNumberPaint)
             }
 
             /*
@@ -483,6 +518,7 @@ class Perspective : CanvasWatchFaceService() {
                 mCenterY - sHourHandLength,
                 mHourPaint
             )
+            canvas.drawCircle(mCenterX, mCenterY-sHourHandLength, 10f, mHourEndPaint)
 
             canvas.rotate(minutesRotation - hoursRotation, mCenterX, mCenterY)
             canvas.drawLine(
@@ -492,6 +528,8 @@ class Perspective : CanvasWatchFaceService() {
                 mCenterY - sMinuteHandLength,
                 mMinutePaint
             )
+
+            canvas.drawCircle(mCenterX, mCenterY-sMinuteHandLength, 8f, mHourEndPaint)
 
             /*
              * Ensure the "seconds" hand is drawn only when we are in interactive mode.
@@ -506,6 +544,9 @@ class Perspective : CanvasWatchFaceService() {
                     mCenterY - mSecondHandLength,
                     mSecondPaint
                 )
+                canvas.drawCircle(mCenterX, mCenterY-mSecondHandLength, 6f, mSecondEndPaint)
+                canvas.drawCircle(mCenterX, mCenterY-(mSecondHandLength+16), 6f, mSecondEndPaint)
+
 
             }
             canvas.drawCircle(
@@ -617,7 +658,11 @@ class Perspective : CanvasWatchFaceService() {
                 mComplicationDrawableSparseArray?.get(complicationId)?.let {
                     complicationDrawable = it
                     val complicationBoundingRect = complicationDrawable.bounds
-                    if (complicationBoundingRect.width() > 0 && complicationBoundingRect.contains(x, y)) {
+                    if (complicationBoundingRect.width() > 0 && complicationBoundingRect.contains(
+                            x,
+                            y
+                        )
+                    ) {
                         return complicationId
                     } else {
                         Log.e(TAG, "Not a recognized complication id.")
@@ -638,8 +683,12 @@ class Perspective : CanvasWatchFaceService() {
                             Log.e(TAG, "onComplicationTap() tap action error: $e")
                         }
                     } ?: if (data.type == ComplicationData.TYPE_NO_PERMISSION) {
-                        val componentName = ComponentName(applicationContext, ComplicationConfigActivity::class.java)
-                        val permissionRequestIntent = ComplicationHelperActivity.createPermissionRequestHelperIntent(
+                        val componentName = ComponentName(
+                            applicationContext,
+                            ComplicationConfigActivity::class.java
+                        )
+                        val permissionRequestIntent =
+                            ComplicationHelperActivity.createPermissionRequestHelperIntent(
                                 applicationContext,
                                 componentName
                             )
