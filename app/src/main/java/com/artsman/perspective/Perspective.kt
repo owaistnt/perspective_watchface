@@ -19,6 +19,8 @@ import android.view.WindowInsets
 import androidx.core.content.ContextCompat
 import androidx.palette.graphics.Palette
 import com.artsman.perspective.R
+import com.artsman.perspective.SupportedThemes
+import com.artsman.perspective.ThemeConfigurationBuilder
 import java.lang.ref.WeakReference
 import java.util.*
 
@@ -90,9 +92,6 @@ class Perspective : CanvasWatchFaceService() {
         private var sHourHandLength: Float = 0F
 
         /* Colors for all hands (hour, minute, seconds, ticks) based on photo loaded. */
-        private var mWatchHandColor: Int = 0
-        private var mWatchHandHighlightColor: Int = 0
-        private var mWatchHandShadowColor: Int = 0
 
         private lateinit var mHourPaint: Paint
         private lateinit var mHourEndPaint: Paint
@@ -123,6 +122,10 @@ class Perspective : CanvasWatchFaceService() {
                 mCalendar.timeZone = TimeZone.getDefault()
                 invalidate()
             }
+        }
+
+        val themeConfiguration by lazy {
+            ThemeConfigurationBuilder(applicationContext).getThemeConfiguration(themes = SupportedThemes.default)
         }
 
         override fun onCreate(holder: SurfaceHolder) {
@@ -156,9 +159,6 @@ class Perspective : CanvasWatchFaceService() {
             mBackgroundPaint = Paint().apply {
                 shader = linearGradient
             }
-            mWatchHandHighlightColor = applicationContext fromColor R.color.bg_gradient_bottom
-            mWatchHandColor = applicationContext fromColor R.color.hand_color
-            mWatchHandShadowColor = applicationContext fromColor R.color.hand_shadow_color
         }
 
         private infix fun Context.fromColor(colorRes: Int): Int {
@@ -167,79 +167,77 @@ class Perspective : CanvasWatchFaceService() {
 
         private fun initializeWatchFace() {
             /* Set defaults for colors */
-            mWatchHandColor = applicationContext fromColor R.color.hand_color
-            mWatchHandHighlightColor = applicationContext fromColor R.color.hand_color_seconds
-            mWatchHandShadowColor = applicationContext fromColor R.color.hand_shadow_color
+
 
             mHourPaint = Paint().apply {
-                color = mWatchHandColor
+                color = themeConfiguration.handColor
                 strokeWidth = HOUR_STROKE_WIDTH
                 isAntiAlias = true
                 strokeCap = Paint.Cap.ROUND
                 setShadowLayer(
-                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                    SHADOW_RADIUS, 0f, 0f, themeConfiguration.handShadowColor
                 )
             }
 
             mHourEndPaint = Paint().apply {
-                color = mWatchHandColor
+                color = themeConfiguration.handColor
                 strokeWidth = HOUR_STROKE_WIDTH
                 isAntiAlias = true
                 strokeCap = Paint.Cap.ROUND
             }
 
             mMinutePaint = Paint().apply {
-                color = mWatchHandColor
+                color = themeConfiguration.handColor
                 strokeWidth = MINUTE_STROKE_WIDTH
                 isAntiAlias = true
                 strokeCap = Paint.Cap.ROUND
                 setShadowLayer(
-                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                    SHADOW_RADIUS, 0f, 0f, themeConfiguration.handShadowColor
                 )
             }
 
             mMinuteEndPaint = Paint().apply {
-                color = mWatchHandColor
+                color = themeConfiguration.handColor
                 strokeWidth = MINUTE_STROKE_WIDTH
                 isAntiAlias = true
                 strokeCap = Paint.Cap.ROUND
             }
 
             mSecondPaint = Paint().apply {
-                color = mWatchHandHighlightColor
+                color = themeConfiguration.handColor
                 strokeWidth = SECOND_TICK_STROKE_WIDTH
                 isAntiAlias = true
                 strokeCap = Paint.Cap.ROUND
                 setShadowLayer(
-                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                    SHADOW_RADIUS, 0f, 0f, themeConfiguration.handShadowColor
                 )
             }
 
             mSecondEndPaint = Paint().apply {
-                color = mWatchHandHighlightColor
+                color = themeConfiguration.handColor
                 strokeWidth = SECOND_TICK_STROKE_WIDTH
                 isAntiAlias = true
                 strokeCap = Paint.Cap.ROUND
             }
 
             mTickAndCirclePaint = Paint().apply {
-                color = mWatchHandColor
+                color = themeConfiguration.handColor
                 strokeWidth = SECOND_TICK_STROKE_WIDTH
                 isAntiAlias = true
                 style = Paint.Style.FILL_AND_STROKE
                 setShadowLayer(
-                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                    SHADOW_RADIUS, 0f, 0f, themeConfiguration.handShadowColor
                 )
             }
 
             mNumberPaint = Paint().apply {
-                color = mWatchHandColor
+                color = themeConfiguration.numberColor
                 strokeWidth = SECOND_TICK_STROKE_WIDTH
                 isAntiAlias = true
                 style = Paint.Style.FILL_AND_STROKE
                 textSize=20f
                 setShadowLayer(
-                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                    SHADOW_RADIUS, 0f, 0f, themeConfiguration.handShadowColor
                 )
             }
         }
@@ -308,10 +306,10 @@ class Perspective : CanvasWatchFaceService() {
                 mTickAndCirclePaint.clearShadowLayer()
 
             } else {
-                mHourPaint.color = mWatchHandColor
-                mMinutePaint.color = mWatchHandColor
-                mSecondPaint.color = mWatchHandHighlightColor
-                mTickAndCirclePaint.color = mWatchHandColor
+                mHourPaint.color = themeConfiguration.handColor
+                mMinutePaint.color = themeConfiguration.handColor
+                mSecondPaint.color = themeConfiguration.handColor
+                mTickAndCirclePaint.color = themeConfiguration.handColor
 
                 mHourPaint.isAntiAlias = true
                 mMinutePaint.isAntiAlias = true
@@ -319,16 +317,16 @@ class Perspective : CanvasWatchFaceService() {
                 mTickAndCirclePaint.isAntiAlias = true
 
                 mHourPaint.setShadowLayer(
-                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                    SHADOW_RADIUS, 0f, 0f, themeConfiguration.handShadowColor
                 )
                 mMinutePaint.setShadowLayer(
-                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                    SHADOW_RADIUS, 0f, 0f, themeConfiguration.handShadowColor
                 )
                 mSecondPaint.setShadowLayer(
-                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                    SHADOW_RADIUS, 0f, 0f, themeConfiguration.handShadowColor
                 )
                 mTickAndCirclePaint.setShadowLayer(
-                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                    SHADOW_RADIUS, 0f, 0f, themeConfiguration.handShadowColor
                 )
             }
         }
